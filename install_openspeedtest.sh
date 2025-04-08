@@ -89,7 +89,7 @@ uninstall_all() {
 
     # Restart default GL.iNet nginx if not running
     echo -e "🔁 Checking default NGINX (GL.iNet GUI / LuCI)..."
-    if pgrep -x nginx >/dev/null; then
+    if pgrep -f nginx >/dev/null; then
         echo -e "✅ Default NGINX is already running."
     else
         echo -e "⚠️\x20 Default NGINX is not running. Attempting restart..."

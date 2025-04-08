@@ -39,75 +39,75 @@ ask_confirmation() {
 diagnose_nginx() {
   echo "Running diagnostics..."
   if netstat -tuln | grep ":3000 " > /dev/null; then
-    echo -e "✅\x20NGINX is running and listening on port 3000"
+    echo -e "✅ NGINX is running and listening on port 3000"
   else
-    echo -e "❌\x20NGINX is not running or not bound to port 3000"
+    echo -e "❌ NGINX is not running or not bound to port 3000"
   fi
   exit 0
 }
 
 uninstall_all() {
-    echo -e "🧹\x20Uninstalling OpenSpeedTest Server..."
+    echo -e "🧹 Uninstalling OpenSpeedTest Server..."
 
     # Kill only the OpenSpeedTest nginx process
-    echo -e "🔍\x20Stopping OpenSpeedTest nginx instance..."
+    echo -e "🔍 Stopping OpenSpeedTest nginx instance..."
     nginx_pid=$(ps | grep "nginx.*$CONFIG_PATH" | grep -v grep | awk '{print $1}')
     
     if [ -n "$nginx_pid" ]; then
-        kill "$nginx_pid" && echo -e "✅\x20OpenSpeedTest nginx process stopped." || echo -e "❌\x20Failed to stop nginx process."
+        kill "$nginx_pid" && echo -e "✅ OpenSpeedTest nginx process stopped." || echo -e "❌ Failed to stop nginx process."
     else
-        echo -e "⚠️\x20No matching nginx process found."
+        echo -e "⚠️ No matching nginx process found."
     fi
 
     # Prompt to delete $INSTALL_DIR completely
     if [ -d "$INSTALL_DIR" ]; then
-        echo -e "🗂\x20Directory $INSTALL_DIR exists. Do you want to remove it entirely? [y/N]"
+        echo -e "🗂 Directory $INSTALL_DIR exists. Do you want to remove it entirely? [y/N]"
         read -r remove_dir
         if [[ "$remove_dir" =~ ^[Yy]$ ]]; then
             rm -rf "$INSTALL_DIR"
-            echo -e "✅\x20$INSTALL_DIR removed."
+            echo -e "✅ $INSTALL_DIR removed."
         fi
     fi
 
     # Remove nginx config
     if [ -f "$CONFIG_PATH" ]; then
-        echo -e "🗑\x20Removing nginx config: $CONFIG_PATH"
-        rm -f "$CONFIG_PATH" && echo -e "✅\x20Removed nginx config." || echo -e "❌\x20Failed to remove config."
+        echo -e "🗑 Removing nginx config: $CONFIG_PATH"
+        rm -f "$CONFIG_PATH" && echo -e "✅ Removed nginx config." || echo -e "❌ Failed to remove config."
     else
-        echo -e "ℹ️\x20No nginx config found at $CONFIG_PATH"
+        echo -e "ℹ️ No nginx config found at $CONFIG_PATH"
     fi
 
     # Remove startup/kill scripts
     if [ -f "$STARTUP_SCRIPT" ]; then
-        echo -e "🗑\x20Removing startup script: $STARTUP_SCRIPT"
+        echo -e "🗑 Removing startup script: $STARTUP_SCRIPT"
         rm -f "$STARTUP_SCRIPT"
     fi
     if [ -f "$KILL_SCRIPT" ]; then
-        echo -e "🗑\x20Removing kill script: $KILL_SCRIPT"
+        echo -e "🗑 Removing kill script: $KILL_SCRIPT"
         rm -f "$KILL_SCRIPT"
     fi
 
     # Restart default GL.iNet nginx if not running
-    echo "🔁\x20Checking default NGINX (GL.iNet GUI / LuCI)..."
+    echo -e "🔁 Checking default NGINX (GL.iNet GUI / LuCI)..."
     if pgrep -x nginx >/dev/null; then
-        echo -e "✅\x20Default NGINX is already running."
+        echo -e "✅ Default NGINX is already running."
     else
-        echo -e "⚠️\x20Default NGINX is not running. Attempting restart..."
+        echo -e "⚠️ Default NGINX is not running. Attempting restart..."
 
         if [ -x /etc/init.d/nginx ]; then
             /etc/init.d/nginx restart && \
-                echo -e "✅\x20Default NGINX restarted via /etc/init.d." || \
-                echo -e "❌\x20Failed to restart default NGINX using init.d script."
+                echo -e "✅ Default NGINX restarted via /etc/init.d." || \
+                echo -e "❌ Failed to restart default NGINX using init.d script."
         elif [ -f /etc/nginx/nginx.conf ]; then
             nginx -c /etc/nginx/nginx.conf && \
-                echo -e "✅\x20Default NGINX restarted via config." || \
-                echo -e "❌\x20Failed to restart default NGINX. Check logs or manually restart."
+                echo -e "✅ Default NGINX restarted via config." || \
+                echo -e "❌ Failed to restart default NGINX. Check logs or manually restart."
         else
-            echo -e "❌\x20Cannot locate init script or nginx.conf to restart default NGINX."
+            echo -e "❌ Cannot locate init script or nginx.conf to restart default NGINX."
         fi
     fi
 
-    echo -e "✅\x20OpenSpeedTest uninstall complete." 
+    echo -e "✅ OpenSpeedTest uninstall complete." 
 }
 
 show_menu() {

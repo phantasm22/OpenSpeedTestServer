@@ -51,7 +51,13 @@ uninstall_all() {
 
     # Kill only the OpenSpeedTest nginx process
     echo "🔍 Stopping OpenSpeedTest nginx instance..."
-    pkill -f "nginx.*$CONFIG_PATH" && echo "✅ OpenSpeedTest nginx process stopped." || echo "⚠️ No matching nginx process found."
+    nginx_pid=$(ps | grep "nginx.*$CONFIG_PATH" | grep -v grep | awk '{print $1}')
+    
+    if [ -n "$nginx_pid" ]; then
+        kill "$nginx_pid" && echo "✅ OpenSpeedTest nginx process stopped." || echo "❌ Failed to stop nginx process."
+    else
+        echo "⚠️ No matching nginx process found."
+    fi
 
     # Prompt to delete $INSTALL_DIR completely
     if [ -d "$INSTALL_DIR" ]; then

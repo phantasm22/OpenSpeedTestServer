@@ -49,7 +49,7 @@ chmod +x install_openspeedtest.sh
 ```
 
 4.	Follow the interactive menu to install, diagnose, or uninstall.
-
+---
 🌐 Access the Speed Test
 
 After installation, open:
@@ -62,7 +62,7 @@ Example:
 ```
 http://192.168.8.1:3000
 ```
-
+---
 
 🔍 Script Options
 
@@ -71,7 +71,7 @@ When running the script, choose from:
 2. Run diagnostics – Checks if NGINX is running and listening on the correct port
 3. Uninstall everything – Removes all config, scripts, and files
 4. Exit – Ends the script
-
+---
 🧹 Uninstallation
 
 Re-run the script and choose option 3: Uninstall everything.
@@ -85,13 +85,14 @@ rm -f /etc/rc.d/S81nginx_speedtest
 rm -f /etc/rc.d/K81nginx_speedtest
 rm -rf /www2/Speed-Test-main
 ```
-
+---
 🧑 Author
 
 phantasm22
 
 Contributions, suggestions, and PRs welcome!
 
+---
 
 📜 License
 

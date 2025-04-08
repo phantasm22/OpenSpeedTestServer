@@ -38,7 +38,7 @@ ssh root@192.168.8.1
 2.	Download the script:
 
 ```
-wget https://raw.githubusercontent.com/phantasm22/OpenSpeedTestServer/main/install_openspeedtest.sh
+wget -O install_openspeedtest.sh https://raw.githubusercontent.com/phantasm22/OpenSpeedTestServer/main/install_openspeedtest.sh
 chmod +x install_openspeedtest.sh
 ```
 

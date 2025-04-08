@@ -61,7 +61,7 @@ uninstall_all() {
 
     # Prompt to delete $INSTALL_DIR completely
     if [ -d "$INSTALL_DIR" ]; then
-        echo -e "🗂 Directory $INSTALL_DIR exists. Do you want to remove it entirely? [y/N]"
+        echo -e "🗂\x20\x20Directory $INSTALL_DIR exists. Do you want to remove it entirely? [y/N]"
         read -r remove_dir
         if [[ "$remove_dir" =~ ^[Yy]$ ]]; then
             rm -rf "$INSTALL_DIR"
@@ -71,24 +71,24 @@ uninstall_all() {
 
     # Remove nginx config
     if [ -f "$CONFIG_PATH" ]; then
-        echo -e "🗑 Removing nginx config: $CONFIG_PATH"
+        echo -e "🗑\x20\x20Removing nginx config: $CONFIG_PATH"
         rm -f "$CONFIG_PATH" && echo -e "✅ Removed nginx config." || echo -e "❌ Failed to remove config."
     else
-        echo -e "ℹ️ No nginx config found at $CONFIG_PATH"
+        echo -e "ℹ️\x20\x20No nginx config found at $CONFIG_PATH"
     fi
 
     # Remove startup/kill scripts
     if [ -f "$STARTUP_SCRIPT" ]; then
-        echo -e "🗑 Removing startup script: $STARTUP_SCRIPT"
+        echo -e "🗑\x20\x20Removing startup script: $STARTUP_SCRIPT"
         rm -f "$STARTUP_SCRIPT"
     fi
     if [ -f "$KILL_SCRIPT" ]; then
-        echo -e "🗑 Removing kill script: $KILL_SCRIPT"
+        echo -e "🗑\x20\x20Removing kill script: $KILL_SCRIPT"
         rm -f "$KILL_SCRIPT"
     fi
 
     # Restart default GL.iNet nginx if not running
-    echo -e "🔁 Checking default NGINX (GL.iNet GUI / LuCI)..."
+    echo -e "🔁\x20\x20Checking default NGINX (GL.iNet GUI / LuCI)..."
     if pgrep -x nginx >/dev/null; then
         echo -e "✅ Default NGINX is already running."
     else

@@ -56,7 +56,7 @@ uninstall_all() {
     if [ -n "$nginx_pid" ]; then
         kill "$nginx_pid" && echo -e "✅ OpenSpeedTest nginx process stopped." || echo -e "❌ Failed to stop nginx process."
     else
-        echo -e "⚠️ No matching nginx process found."
+        echo -e "⚠️\x20\x20No matching nginx process found."
     fi
 
     # Prompt to delete $INSTALL_DIR completely
@@ -92,7 +92,7 @@ uninstall_all() {
     if pgrep -x nginx >/dev/null; then
         echo -e "✅ Default NGINX is already running."
     else
-        echo -e "⚠️ Default NGINX is not running. Attempting restart..."
+        echo -e "⚠️\x20\x20Default NGINX is not running. Attempting restart..."
 
         if [ -x /etc/init.d/nginx ]; then
             /etc/init.d/nginx restart && \
@@ -231,7 +231,7 @@ EOF
   echo "Starting NGINX..."
   /usr/sbin/nginx -c "$CONFIG_PATH"
 
-  echo -e "✅\x20Installation complete. Open http://<router-ip>:3000 in your browser."
+  echo -e "✅ Installation complete. Open http://<router-ip>:3000 in your browser."
   exit 0
 }
 

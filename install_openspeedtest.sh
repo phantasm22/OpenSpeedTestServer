@@ -47,14 +47,11 @@ diagnose_nginx() {
 }
 
 uninstall_all() {
-echo "🔄 Stopping OpenSpeedTest NGINX instance..."
-    killall nginx 2>/dev/null
+    echo "🧹 Uninstalling OpenSpeedTest Server..."
 
-    echo "🧹 Removing OpenSpeedTest files and configuration..."
-    rm -f "$CONFIG_PATH"
-    rm -f "$STARTUP_SCRIPT"
-    rm -f "$KILL_SCRIPT"
-    rm -rf "$INSTALL_DIR/Speed-Test-main"
+    # Kill only the OpenSpeedTest nginx process
+    echo "🔍 Stopping OpenSpeedTest nginx instance..."
+    pkill -f "nginx.*$CONFIG_PATH" && echo "✅ OpenSpeedTest nginx process stopped." || echo "⚠️ No matching nginx process found."
 
     # Prompt to delete $INSTALL_DIR completely
     if [ -d "$INSTALL_DIR" ]; then
@@ -66,18 +63,45 @@ echo "🔄 Stopping OpenSpeedTest NGINX instance..."
         fi
     fi
 
-    # Auto-restart GL.iNet default NGINX (for router GUI/LuCI)
-    DEFAULT_NGINX_CONF="/etc/nginx/nginx.conf"
-    if [ -f "$DEFAULT_NGINX_CONF" ]; then
-        echo "🔁 Restarting default NGINX (GL.iNet GUI / LuCI)..."
-        nginx -c "$DEFAULT_NGINX_CONF" && \
-            echo "✅ Default NGINX restarted successfully." || \
-            echo "❌ Failed to restart default NGINX. Please verify $DEFAULT_NGINX_CONF."
+    # Remove nginx config
+    if [ -f "$CONFIG_PATH" ]; then
+        echo "🗑 Removing nginx config: $CONFIG_PATH"
+        rm -f "$CONFIG_PATH" && echo "✅ Removed nginx config." || echo "❌ Failed to remove config."
     else
-        echo "⚠️ Default nginx.conf not found at $DEFAULT_NGINX_CONF. GUI might be affected."
+        echo "ℹ️ No nginx config found at $CONFIG_PATH"
     fi
 
-    echo "✅ OpenSpeedTest uninstallation complete."
+    # Remove startup/kill scripts
+    if [ -f "$STARTUP_SCRIPT" ]; then
+        echo "🗑 Removing startup script: $STARTUP_SCRIPT"
+        rm -f "$STARTUP_SCRIPT"
+    fi
+    if [ -f "$KILL_SCRIPT" ]; then
+        echo "🗑 Removing kill script: $KILL_SCRIPT"
+        rm -f "$KILL_SCRIPT"
+    fi
+
+    # Restart default GL.iNet nginx if not running
+    echo "🔁 Checking default NGINX (GL.iNet GUI / LuCI)..."
+    if pgrep -x nginx >/dev/null; then
+        echo "✅ Default NGINX is already running."
+    else
+        echo "⚠️ Default NGINX is not running. Attempting restart..."
+
+        if [ -x /etc/init.d/nginx ]; then
+            /etc/init.d/nginx restart && \
+                echo "✅ Default NGINX restarted via /etc/init.d." || \
+                echo "❌ Failed to restart default NGINX using init.d script."
+        elif [ -f /etc/nginx/nginx.conf ]; then
+            nginx -c /etc/nginx/nginx.conf && \
+                echo "✅ Default NGINX restarted via config." || \
+                echo "❌ Failed to restart default NGINX. Check logs or manually restart."
+        else
+            echo "❌ Cannot locate init script or nginx.conf to restart default NGINX."
+        fi
+    fi
+
+    echo "✅ OpenSpeedTest uninstall complete." 
 }
 
 show_menu() {

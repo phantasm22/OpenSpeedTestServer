@@ -56,7 +56,7 @@ uninstall_all() {
     if [ -n "$nginx_pid" ]; then
         kill "$nginx_pid" && echo -e "✅ OpenSpeedTest nginx process stopped." || echo -e "❌ Failed to stop nginx process."
     else
-        echo -e "⚠️ No matching nginx process found."
+        echo -e "⚠️  No matching nginx process found."
     fi
 
     # Prompt to delete $INSTALL_DIR completely
@@ -74,7 +74,7 @@ uninstall_all() {
         echo -e "🗑 Removing nginx config: $CONFIG_PATH"
         rm -f "$CONFIG_PATH" && echo -e "✅ Removed nginx config." || echo -e "❌ Failed to remove config."
     else
-        echo -e "ℹ️ No nginx config found at $CONFIG_PATH"
+        echo -e "ℹ️  No nginx config found at $CONFIG_PATH"
     fi
 
     # Remove startup/kill scripts
@@ -92,7 +92,7 @@ uninstall_all() {
     if pgrep -x nginx >/dev/null; then
         echo -e "✅ Default NGINX is already running."
     else
-        echo -e "⚠️ Default NGINX is not running. Attempting restart..."
+        echo -e "⚠️  Default NGINX is not running. Attempting restart..."
 
         if [ -x /etc/init.d/nginx ]; then
             /etc/init.d/nginx restart && \

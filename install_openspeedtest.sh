@@ -47,17 +47,37 @@ diagnose_nginx() {
 }
 
 uninstall_all() {
-  echo "Stopping NGINX..."
-  killall nginx 2>/dev/null
+echo "🔄 Stopping OpenSpeedTest NGINX instance..."
+    killall nginx 2>/dev/null
 
-  echo "Removing config and startup scripts..."
-  rm -f "$CONFIG_PATH" "$STARTUP_SCRIPT" "$KILL_SCRIPT"
+    echo "🧹 Removing OpenSpeedTest files and configuration..."
+    rm -f "$CONFIG_PATH"
+    rm -f "$STARTUP_SCRIPT"
+    rm -f "$KILL_SCRIPT"
+    rm -rf "$INSTALL_DIR/Speed-Test-main"
 
-  echo "Removing OpenSpeedTest files..."
-  rm -rf "$INSTALL_DIR/Speed-Test-main"
+    # Prompt to delete $INSTALL_DIR completely
+    if [ -d "$INSTALL_DIR" ]; then
+        echo "🗂 Directory $INSTALL_DIR exists. Do you want to remove it entirely? [y/N]"
+        read -r remove_dir
+        if [[ "$remove_dir" =~ ^[Yy]$ ]]; then
+            rm -rf "$INSTALL_DIR"
+            echo "✅ $INSTALL_DIR removed."
+        fi
+    fi
 
-  echo "✅ Uninstall complete."
-  exit 0
+    # Auto-restart GL.iNet default NGINX (for router GUI/LuCI)
+    DEFAULT_NGINX_CONF="/etc/nginx/nginx.conf"
+    if [ -f "$DEFAULT_NGINX_CONF" ]; then
+        echo "🔁 Restarting default NGINX (GL.iNet GUI / LuCI)..."
+        nginx -c "$DEFAULT_NGINX_CONF" && \
+            echo "✅ Default NGINX restarted successfully." || \
+            echo "❌ Failed to restart default NGINX. Please verify $DEFAULT_NGINX_CONF."
+    else
+        echo "⚠️ Default nginx.conf not found at $DEFAULT_NGINX_CONF. GUI might be affected."
+    fi
+
+    echo "✅ OpenSpeedTest uninstallation complete."
 }
 
 show_menu() {

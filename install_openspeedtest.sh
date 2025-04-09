@@ -24,8 +24,7 @@ SPLASH="
 
 INSTALL_DIR="/www2"
 CONFIG_PATH="/etc/nginx/nginx_openspeedtest.conf"
-STARTUP_SCRIPT="/etc/rc.d/S81nginx_speedtest"
-KILL_SCRIPT="/etc/rc.d/K81nginx_speedtest"
+STARTUP_SCRIPT="/etc/init.d/nginx_speedtest"
 STARTUP_CONF_DIR="/etc/nginx/conf.d"
 REQUIRED_SPACE_MB=64
 
@@ -73,15 +72,12 @@ uninstall_all() {
         echo -e "ℹ️\x20 No nginx config found at $CONFIG_PATH"
     fi
 
-    # Remove startup/kill scripts
+    # Remove startup script
     if [ -f "$STARTUP_SCRIPT" ]; then
         echo -e "🗑\x20 Removing startup script: $STARTUP_SCRIPT"
         rm -f "$STARTUP_SCRIPT"
     fi
-    if [ -f "$KILL_SCRIPT" ]; then
-        echo -e "🗑\x20 Removing kill script: $KILL_SCRIPT"
-        rm -f "$KILL_SCRIPT"
-    fi
+  
 
     # Restart default GL.iNet nginx if not running
     echo -e "🔁 Checking default NGINX (GL.iNet GUI / LuCI)..."
@@ -263,16 +259,12 @@ stop() {
 }
 EOF
 
-  cat <<EOF > "$KILL_SCRIPT"
-#!/bin/sh
-echo "Killing OpenSpeedTest NGINX Server..."
-killall nginx
-EOF
 
-  chmod +x "$STARTUP_SCRIPT" "$KILL_SCRIPT"
+  chmod +x "$STARTUP_SCRIPT" 
+  "$STARTUP_SCRIPT" enable
 
   echo "Starting NGINX..."
-  /usr/sbin/nginx -c "$CONFIG_PATH"
+  "$STARTUP_SCRIPT" start
 
   echo -e "✅ Installation complete. Open http://<router-ip>:3000 in your browser."
   exit 0

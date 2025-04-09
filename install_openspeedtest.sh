@@ -140,8 +140,34 @@ install_openspeedtest() {
   AVAILABLE_SPACE_MB=$(df -m "$SPACE_CHECK_PATH" 2>/dev/null | awk 'NR==2 {print $4}')
 
   if [ -z "$AVAILABLE_SPACE_MB" ] || [ "$AVAILABLE_SPACE_MB" -lt "$REQUIRED_SPACE_MB" ]; then
-    echo -e "❌ Not enough free space to install. Required: ${REQUIRED_SPACE_MB}MB, Available: ${AVAILABLE_SPACE_MB:-0}MB"
-    exit 1
+    echo -e "❌ Not enough free space at $SPACE_CHECK_PATH. Required: ${REQUIRED_SPACE_MB}MB, Available: ${AVAILABLE_SPACE_MB:-0}MB"
+    
+    echo "🔍 Searching mounted external drives for sufficient space..."
+
+    for mountpoint in $(awk '$2 ~ /^\/mnt\// {print $2}' /proc/mounts); do
+      ext_space=$(df -m "$mountpoint" | awk 'NR==2 {print $4}')
+      if [ "$ext_space" -ge "$REQUIRED_SPACE_MB" ]; then
+        echo "💾 Found external drive with enough space: $mountpoint (${ext_space}MB available)"
+        echo "Would you like to use it for installation by creating a symlink at $INSTALL_DIR? (y/n)"
+        read -r use_external
+        if [ "$use_external" = "y" ]; then
+          INSTALL_DIR="$mountpoint/openspeedtest"
+          mkdir -p "$INSTALL_DIR"
+          ln -sf "$INSTALL_DIR" /www2
+          echo "✅ Symlink created: /www2 -> $INSTALL_DIR"
+          break
+        fi
+      fi
+    done
+
+    # Recheck if INSTALL_DIR now has enough space
+    NEW_SPACE_MB=$(df -m "$INSTALL_DIR" 2>/dev/null | awk 'NR==2 {print $4}')
+    if [ -z "$NEW_SPACE_MB" ] || [ "$NEW_SPACE_MB" -lt "$REQUIRED_SPACE_MB" ]; then
+      echo -e "❌ Still not enough space to install. Aborting."
+      exit 1
+    else
+      echo -e "✅ Sufficient space found at new location: ${NEW_SPACE_MB}MB available."
+    fi
   else
     echo -e "✅ Sufficient space for installation: ${AVAILABLE_SPACE_MB}MB available."
   fi

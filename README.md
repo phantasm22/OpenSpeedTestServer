@@ -83,8 +83,8 @@ Or manually:
 ```
 killall nginx
 rm -f /etc/nginx/nginx_openspeedtest.conf
-rm -f /etc/rc.d/S81nginx_speedtest
-rm -f /etc/rc.d/K81nginx_speedtest
+/etc/init.d/nginx_speedtest disable
+rm -f /etc/init.d/nginx_speedtest
 rm -rf /www2/Speed-Test-main
 ```
 ---

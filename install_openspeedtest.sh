@@ -31,12 +31,6 @@ REQUIRED_SPACE_MB=64
 
 echo "$SPLASH"
 
-ask_confirmation() {
-  echo "$1 (y/n)"
-  read -r ans
-  [ "$ans" = "y" ] || exit 0
-}
-
 diagnose_nginx() {
   echo "Running diagnostics..."
   if netstat -tuln | grep ":3000 " > /dev/null; then
@@ -62,7 +56,7 @@ uninstall_all() {
 
     # Prompt to delete $INSTALL_DIR completely
     if [ -d "$INSTALL_DIR" ]; then
-        echo -e "🗂\x20 Directory $INSTALL_DIR exists. Do you want to remove it entirely? [y/N]"
+        printf "🗂\x20 Directory $INSTALL_DIR exists. Do you want to remove it entirely? [y/N] "
         read -r remove_dir
         if [[ "$remove_dir" =~ ^[Yy]$ ]]; then
             rm -rf "$INSTALL_DIR"
@@ -148,9 +142,9 @@ install_openspeedtest() {
       ext_space=$(df -m "$mountpoint" | awk 'NR==2 {print $4}')
       if [ "$ext_space" -ge "$REQUIRED_SPACE_MB" ]; then
         echo "💾 Found external drive with enough space: $mountpoint (${ext_space}MB available)"
-        echo "Would you like to use it for installation by creating a symlink at $INSTALL_DIR? (y/n)"
+        printf "Would you like to use it for installation by creating a symlink at $INSTALL_DIR? [y/N] "
         read -r use_external
-        if [ "$use_external" = "y" ]; then
+        if [[ "$use_external" =~ ^[Yy]$ ]]; then
           INSTALL_DIR="$mountpoint/openspeedtest"
           mkdir -p "$INSTALL_DIR"
           ln -sf "$INSTALL_DIR" /www2

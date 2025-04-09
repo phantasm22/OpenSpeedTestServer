@@ -18,12 +18,15 @@
 ## Features
 
 - 📦 Installs and configures [NGINX](https://nginx.org/) to run [OpenSpeedTest](https://openspeedtest.com/)
-- 🔧 Custom NGINX configuration that avoids common conflicts
-- 📁 Extracts OpenSpeedTest into `/www2`
+- 🔧 Custom NGINX configuration that avoids conflicts with the GL.iNet web UI
+- 📁 Installs to `/www2`, with automatic detection of available storage space
+- 🔗 Supports symlinking to external drives (e.g. SD cards or USB) if internal space is insufficient
 - 🔁 Creates startup and kill scripts for boot-time operation
-- 🩺 Includes diagnostic and uninstall options
-- 🧑‍💻 Interactive CLI prompts
+- 🧹 Clean uninstall that removes configs, startup scripts, and any symlinked storage
+- 🩺 Includes diagnostics to verify NGINX is running and reachable
+- 🧑‍💻 Interactive CLI with confirmations and safe prompts
 - 🆓 Licensed under GPLv3
+- 🧪 Tested on GL-BE3600, GL-MT3000, and GL-MT1300 (with SD card) routers
 
 ---
 

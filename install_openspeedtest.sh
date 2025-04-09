@@ -27,7 +27,7 @@ CONFIG_PATH="/etc/nginx/nginx_openspeedtest.conf"
 STARTUP_SCRIPT="/etc/init.d/nginx_speedtest"
 STARTUP_CONF_DIR="/etc/nginx/conf.d"
 REQUIRED_SPACE_MB=64
-PORT=8080
+PORT=8888
 
 clear
 echo "$SPLASH"

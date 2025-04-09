@@ -59,7 +59,7 @@ uninstall_all() {
         printf "🗂\x20 Directory $INSTALL_DIR exists. Do you want to remove it entirely? [y/N] "
         read -r remove_dir
         if [[ "$remove_dir" =~ ^[Yy]$ ]]; then
-            rm -rf "$(readlink -f $INSTALL_DIR") "$INSTALL_DIR"
+            rm -rf "$(readlink -f "$INSTALL_DIR")" "$INSTALL_DIR"
             echo -e "✅ $INSTALL_DIR removed."
         fi
     fi

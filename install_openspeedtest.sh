@@ -59,7 +59,7 @@ uninstall_all() {
         printf "🗂\x20 Directory $INSTALL_DIR exists. Do you want to remove it entirely? [y/N] "
         read -r remove_dir
         if [[ "$remove_dir" =~ ^[Yy]$ ]]; then
-            rm -rf "$INSTALL_DIR"
+            rm -rf "$(readlink -f $INSTALL_DIR") "$INSTALL_DIR"
             echo -e "✅ $INSTALL_DIR removed."
         fi
     fi
@@ -234,7 +234,11 @@ EOF
   cd "$INSTALL_DIR" || exit 1
 
   if [ -d Speed-Test-main ]; then
-    ask_confirmation "Directory already exists. Overwrite?"
+    printf "Directory already exists. Overwrite? [y/N] "
+    read -r dir_exists
+        if [[ "$dir_exists" =~ ^[Yy]$ ]]; then
+            rm -rf Speed-Test-main
+        fi
     rm -rf Speed-Test-main
   fi
 

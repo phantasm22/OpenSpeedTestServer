@@ -75,6 +75,7 @@ uninstall_all() {
     # Remove startup script
     if [ -f "$STARTUP_SCRIPT" ]; then
         echo -e "🗑\x20 Removing startup script: $STARTUP_SCRIPT"
+        "$STARTUP_SCRIPT" disable
         rm -f "$STARTUP_SCRIPT"
     fi
   

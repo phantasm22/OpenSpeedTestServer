@@ -56,13 +56,13 @@ wget -O install_openspeedtest.sh https://raw.githubusercontent.com/phantasm22/Op
 
 After installation, open:
 ```
-http://<router-ip>:3000
+http://<router-ip>:8888
 ```
 
 Example:
 
 ```
-http://192.168.8.1:3000
+http://192.168.8.1:8888
 ```
 ---
 

@@ -250,7 +250,7 @@ EOF
 
   echo "Creating startup scripts..."
   cat <<EOF > "$STARTUP_SCRIPT"
-#!/bin/sh
+#!/bin/sh /etc/rc.common
 START=81
 STOP=15
 start() {

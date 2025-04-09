@@ -29,6 +29,7 @@ KILL_SCRIPT="/etc/rc.d/K81nginx_speedtest"
 STARTUP_CONF_DIR="/etc/nginx/conf.d"
 REQUIRED_SPACE_MB=64
 
+clear
 echo "$SPLASH"
 
 diagnose_nginx() {

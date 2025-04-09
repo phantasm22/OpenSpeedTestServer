@@ -27,16 +27,17 @@ CONFIG_PATH="/etc/nginx/nginx_openspeedtest.conf"
 STARTUP_SCRIPT="/etc/init.d/nginx_speedtest"
 STARTUP_CONF_DIR="/etc/nginx/conf.d"
 REQUIRED_SPACE_MB=64
+PORT=8080
 
 clear
 echo "$SPLASH"
 
 diagnose_nginx() {
   echo "Running diagnostics..."
-  if netstat -tuln | grep ":3000 " > /dev/null; then
-    echo -e "✅ NGINX is running and listening on port 3000"
+  if netstat -tuln | grep ":$PORT " > /dev/null; then
+    echo -e "✅ NGINX is running and listening on port $PORT"
   else
-    echo -e "❌ NGINX is not running or not bound to port 3000"
+    echo -e "❌ NGINX is not running or not bound to port $PORT"
   fi
   exit 0
 }
@@ -191,8 +192,8 @@ http {
 
     server {
         server_name _ localhost;
-        listen 3000;
-        listen [::]:3000;
+        listen $PORT;
+        listen [::]:$PORT;
         root $INSTALL_DIR/Speed-Test-main;
         index index.html;
 
@@ -267,7 +268,7 @@ EOF
   echo "Starting NGINX..."
   "$STARTUP_SCRIPT" start
 
-  echo -e "✅ Installation complete. Open http://<router-ip>:3000 in your browser."
+  echo -e "✅ Installation complete. Open http://<router-ip>:$PORT in your browser."
   exit 0
 }
 

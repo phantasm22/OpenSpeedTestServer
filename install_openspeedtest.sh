@@ -27,6 +27,7 @@ CONFIG_PATH="/etc/nginx/nginx_openspeedtest.conf"
 STARTUP_SCRIPT="/etc/rc.d/S81nginx_speedtest"
 KILL_SCRIPT="/etc/rc.d/K81nginx_speedtest"
 STARTUP_CONF_DIR="/etc/nginx/conf.d"
+REQUIRED_SPACE_MB=64
 
 echo "$SPLASH"
 
@@ -128,6 +129,23 @@ show_menu() {
 }
 
 install_openspeedtest() {
+  # Decide where to check space
+  if [ -e "$INSTALL_DIR" ]; then
+      SPACE_CHECK_PATH="$INSTALL_DIR"
+  else
+      SPACE_CHECK_PATH="/"
+  fi
+
+  # Check available space (in MB)
+  AVAILABLE_SPACE_MB=$(df -m "$SPACE_CHECK_PATH" 2>/dev/null | awk 'NR==2 {print $4}')
+
+  if [ -z "$AVAILABLE_SPACE_MB" ] || [ "$AVAILABLE_SPACE_MB" -lt "$REQUIRED_SPACE_MB" ]; then
+    echo -e "❌ Not enough free space to install. Required: ${REQUIRED_SPACE_MB}MB, Available: ${AVAILABLE_SPACE_MB:-0}MB"
+    exit 1
+  else
+    echo -e "✅ Sufficient space for installation: ${AVAILABLE_SPACE_MB}MB available."
+  fi
+  
   echo "Checking if NGINX is installed..."
   if ! command -v nginx >/dev/null; then
     echo "NGINX not found. Installing..."
@@ -207,7 +225,7 @@ EOF
 
   echo "Creating startup scripts..."
   cat <<EOF > "$STARTUP_SCRIPT"
-#!/bin/sh /etc/rc.common
+#!/bin/sh
 START=81
 STOP=15
 start() {

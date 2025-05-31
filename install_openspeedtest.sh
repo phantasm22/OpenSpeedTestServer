@@ -206,6 +206,7 @@ http {
         tcp_nodelay on;
         tcp_nopush on;
         sendfile on;
+        resolver 127.0.0.1;
 
         location / {
             add_header 'Access-Control-Allow-Origin' "*" always;

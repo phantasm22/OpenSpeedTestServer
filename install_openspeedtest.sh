@@ -243,7 +243,7 @@ EOF
   fi
 
   echo "Downloading OpenSpeedTest..."
-  wget -qO main.zip https://github.com/openspeedtest/Speed-Test/archive/refs/heads/main.zip
+  wget -qO main.zip https://fw.gl-inet.com/tools/script/Speed-Test-main.zip
   unzip -o main.zip >/dev/null
   rm main.zip
 

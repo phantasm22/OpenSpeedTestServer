@@ -53,7 +53,7 @@ spinner() {
     i=0
     while kill -0 "$pid" 2>/dev/null; do
         frame=$(echo "$BLA_BOX" | cut -d' ' -f$((i % 4 + 1)))
-        printf "\r⏳  Loading OpenSpeedTest... %-20s" "$frame"
+        printf "\r⏳  Downloading OpenSpeedTest... %-20s" "$frame"
         if command -v usleep >/dev/null 2>&1; then
             usleep 200000
         else
@@ -61,7 +61,7 @@ spinner() {
         fi
         i=$((i+1))
     done
-    printf "\r✅  Loading OpenSpeedTest... Done!      \n"
+    printf "\r✅  Downloading OpenSpeedTest... Done!      \n"
 }
 
 spinner_unzip() {

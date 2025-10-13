@@ -2,7 +2,7 @@
 # OpenSpeedTest Installer for NGINX on GL.iNet Routers
 # Author: phantasm22
 # License: GPL-3.0
-# Version: 2025-04-08
+# Version: 2025-10-14-updated
 #
 # This script installs or uninstalls the OpenSpeedTest server using NGINX on OpenWRT-based routers.
 # It supports:
@@ -10,6 +10,18 @@
 # - Creating a custom config and startup script
 # - Running diagnostics to check if NGINX is active
 # - Uninstalling everything cleanly
+
+
+
+
+# -----------------------------
+# Color & Emoji
+# -----------------------------
+RESET="\033[0m"
+CYAN="\033[36m"
+GREEN="\033[32m"
+RED="\033[31m"
+YELLOW="\033[33m"
 
 SPLASH="
    _____ _          _ _   _      _   
@@ -22,158 +34,177 @@ SPLASH="
          OpenSpeedTest for GL-iNet
 "
 
+# -----------------------------
+# Global Variables
+# -----------------------------
 INSTALL_DIR="/www2"
 CONFIG_PATH="/etc/nginx/nginx_openspeedtest.conf"
 STARTUP_SCRIPT="/etc/init.d/nginx_speedtest"
-STARTUP_CONF_DIR="/etc/nginx/conf.d"
 REQUIRED_SPACE_MB=64
 PORT=8888
+PID_FILE="/var/run/nginx_OpenSpeedTest.pid"
+BLA_BOX="┤ ┴ ├ ┬"  # spinner frames
 
-clear
-echo "$SPLASH"
-
-diagnose_nginx() {
-  echo "Running diagnostics..."
-  if netstat -tuln | grep ":$PORT " > /dev/null; then
-    echo -e "✅ NGINX is running and listening on port $PORT"
-  else
-    echo -e "❌ NGINX is not running or not bound to port $PORT"
-  fi
-  exit 0
-}
-
-uninstall_all() {
-    echo -e "🧹 Uninstalling OpenSpeedTest Server..."
-
-    # Kill only the OpenSpeedTest nginx process
-    echo -e "🔍 Stopping OpenSpeedTest nginx instance..."
-    nginx_pid=$(ps | grep "nginx.*$CONFIG_PATH" | grep -v grep | awk '{print $1}')
-    
-    if [ -n "$nginx_pid" ]; then
-        kill "$nginx_pid" && echo -e "✅ OpenSpeedTest nginx process stopped." || echo -e "❌ Failed to stop nginx process."
-    else
-        echo -e "⚠️\x20 No matching nginx process found."
-    fi
-
-    # Prompt to delete $INSTALL_DIR completely
-    if [ -d "$INSTALL_DIR" ]; then
-        printf "🗂\x20 Directory $INSTALL_DIR exists. Do you want to remove it entirely? [y/N] "
-        read -r remove_dir
-        if [[ "$remove_dir" =~ ^[Yy]$ ]]; then
-            rm -rf "$(readlink -f "$INSTALL_DIR")" "$INSTALL_DIR"
-            echo -e "✅ $INSTALL_DIR removed."
-        fi
-    fi
-
-    # Remove nginx config
-    if [ -f "$CONFIG_PATH" ]; then
-        echo -e "🗑\x20 Removing nginx config: $CONFIG_PATH"
-        rm -f "$CONFIG_PATH" && echo -e "✅ Removed nginx config." || echo -e "❌ Failed to remove config."
-    else
-        echo -e "ℹ️\x20 No nginx config found at $CONFIG_PATH"
-    fi
-
-    # Remove startup script
-    if [ -f "$STARTUP_SCRIPT" ]; then
-        echo -e "🗑\x20 Removing startup script: $STARTUP_SCRIPT"
-        "$STARTUP_SCRIPT" disable
-        rm -f "$STARTUP_SCRIPT"
-    fi
-  
-
-    # Restart default GL.iNet nginx if not running
-    echo -e "🔁 Checking default NGINX (GL.iNet GUI / LuCI)..."
-    if pgrep -f nginx >/dev/null; then
-        echo -e "✅ Default NGINX is already running."
-    else
-        echo -e "⚠️\x20 Default NGINX is not running. Attempting restart..."
-
-        if [ -x /etc/init.d/nginx ]; then
-            /etc/init.d/nginx restart && \
-                echo -e "✅ Default NGINX restarted via /etc/init.d." || \
-                echo -e "❌ Failed to restart default NGINX using init.d script."
-        elif [ -f /etc/nginx/nginx.conf ]; then
-            nginx -c /etc/nginx/nginx.conf && \
-                echo -e "✅ Default NGINX restarted via config." || \
-                echo -e "❌ Failed to restart default NGINX. Check logs or manually restart."
+# -----------------------------
+# Utility Functions
+# -----------------------------
+spinner() {
+    pid=$1
+    i=0
+    while kill -0 "$pid" 2>/dev/null; do
+        frame=$(echo "$BLA_BOX" | cut -d' ' -f$((i % 4 + 1)))
+        printf "\r⏳  Loading OpenSpeedTest... %-20s" "$frame"
+        if command -v usleep >/dev/null 2>&1; then
+            usleep 200000
         else
-            echo -e "❌ Cannot locate init script or nginx.conf to restart default NGINX."
+            sleep 1
         fi
-    fi
-
-    echo -e "✅ OpenSpeedTest uninstall complete." 
-}
-
-show_menu() {
-  echo "Choose an option:"
-  echo "1. Install OpenSpeedTest"
-  echo "2. Run diagnostics"
-  echo "3. Uninstall everything"
-  echo "4. Exit"
-  read -r opt
-
-  case $opt in
-    1) install_openspeedtest ;;
-    2) diagnose_nginx ;;
-    3) uninstall_all ;;
-    4) exit 0 ;;
-    *) echo "Invalid option" && show_menu ;;
-  esac
-}
-
-install_openspeedtest() {
-  # Decide where to check space
-  if [ -e "$INSTALL_DIR" ]; then
-      SPACE_CHECK_PATH="$INSTALL_DIR"
-  else
-      SPACE_CHECK_PATH="/"
-  fi
-
-  # Check available space (in MB)
-  AVAILABLE_SPACE_MB=$(df -m "$SPACE_CHECK_PATH" 2>/dev/null | awk 'NR==2 {print $4}')
-
-  if [ -z "$AVAILABLE_SPACE_MB" ] || [ "$AVAILABLE_SPACE_MB" -lt "$REQUIRED_SPACE_MB" ]; then
-    echo -e "❌ Not enough free space at $SPACE_CHECK_PATH. Required: ${REQUIRED_SPACE_MB}MB, Available: ${AVAILABLE_SPACE_MB:-0}MB"
-    
-    echo "🔍 Searching mounted external drives for sufficient space..."
-
-    for mountpoint in $(awk '$2 ~ /^\/mnt\// {print $2}' /proc/mounts); do
-      ext_space=$(df -m "$mountpoint" | awk 'NR==2 {print $4}')
-      if [ "$ext_space" -ge "$REQUIRED_SPACE_MB" ]; then
-        echo "💾 Found external drive with enough space: $mountpoint (${ext_space}MB available)"
-        printf "Would you like to use it for installation by creating a symlink at $INSTALL_DIR? [y/N] "
-        read -r use_external
-        if [[ "$use_external" =~ ^[Yy]$ ]]; then
-          INSTALL_DIR="$mountpoint/openspeedtest"
-          mkdir -p "$INSTALL_DIR"
-          ln -sf "$INSTALL_DIR" /www2
-          echo "✅ Symlink created: /www2 -> $INSTALL_DIR"
-          break
-        fi
-      fi
+        i=$((i+1))
     done
+    printf "\r✅  Loading OpenSpeedTest... Done!      \n"
+}
 
-    # Recheck if INSTALL_DIR now has enough space
-    NEW_SPACE_MB=$(df -m "$INSTALL_DIR" 2>/dev/null | awk 'NR==2 {print $4}')
-    if [ -z "$NEW_SPACE_MB" ] || [ "$NEW_SPACE_MB" -lt "$REQUIRED_SPACE_MB" ]; then
-      echo -e "❌ Still not enough space to install. Aborting."
-      exit 1
+spinner_unzip() {
+    pid=$1
+    i=0
+    while kill -0 "$pid" 2>/dev/null; do
+        frame=$(echo "$BLA_BOX" | cut -d' ' -f$((i % 4 + 1)))
+        printf "\r⏳  Unzipping... %-20s" "$frame"
+        if command -v usleep >/dev/null 2>&1; then
+            usleep 200000
+        else
+            sleep 1
+        fi
+        i=$((i+1))
+    done
+    printf "\r✅  Unzip complete!        \n"
+}
+
+press_any_key() {
+    printf "Press any key to continue..."
+    read -r _
+}
+
+# -----------------------------
+# Disk Space Check & External Drive
+# -----------------------------
+check_space() {
+    SPACE_CHECK_PATH="$INSTALL_DIR"
+    [ ! -e "$INSTALL_DIR" ] && SPACE_CHECK_PATH="/"
+
+    AVAILABLE_SPACE_MB=$(df -m "$SPACE_CHECK_PATH" 2>/dev/null | awk 'NR==2 {print $4}')
+    if [ -z "$AVAILABLE_SPACE_MB" ] || [ "$AVAILABLE_SPACE_MB" -lt "$REQUIRED_SPACE_MB" ]; then
+        printf "❌ Not enough free space at %s. Required: %dMB, Available: %sMB  \n" "$SPACE_CHECK_PATH" "$REQUIRED_SPACE_MB" "${AVAILABLE_SPACE_MB:-0}"
+        printf "\n🔍 Searching mounted external drives for sufficient space...\n"
+
+        for mountpoint in $(awk '$2 ~ /^\/mnt\// {print $2}' /proc/mounts); do
+            ext_space=$(df -m "$mountpoint" | awk 'NR==2 {print $4}')
+            if [ "$ext_space" -ge "$REQUIRED_SPACE_MB" ]; then
+                printf "💾 Found external drive with enough space: %s (%dMB available)\n" "$mountpoint" "$ext_space"
+                printf "Use it for installation by creating a symlink at %s? [y/N]: " "$INSTALL_DIR"
+                read -r use_external
+                if [ "$use_external" = "y" ] || [ "$use_external" = "Y" ]; then
+                    INSTALL_DIR="$mountpoint/openspeedtest"
+                    mkdir -p "$INSTALL_DIR"
+                    ln -sf "$INSTALL_DIR" /www2
+                    printf "✅ Symlink created: /www2 -> %s\n" "$INSTALL_DIR"
+                    break
+                fi
+            fi
+        done
+
+        NEW_SPACE_MB=$(df -m "$INSTALL_DIR" 2>/dev/null | awk 'NR==2 {print $4}')
+        if [ -z "$NEW_SPACE_MB" ] || [ "$NEW_SPACE_MB" -lt "$REQUIRED_SPACE_MB" ]; then
+            printf "❌ Still not enough space to install. Aborting.\n"
+            exit 1
+        else
+            printf "✅ Sufficient space found at new location: %dMB available  \n" "$NEW_SPACE_MB"
+        fi
     else
-      echo -e "✅ Sufficient space found at new location: ${NEW_SPACE_MB}MB available."
+        printf "✅ Sufficient space for installation: %dMB available  \n" "$AVAILABLE_SPACE_MB"
     fi
-  else
-    echo -e "✅ Sufficient space for installation: ${AVAILABLE_SPACE_MB}MB available."
-  fi
-  
-  echo "Checking if NGINX is installed..."
-  if ! command -v nginx >/dev/null; then
-    echo "NGINX not found. Installing..."
-    opkg update
-    opkg install nginx
-  fi
+}
 
-  echo "Creating OpenSpeedTest NGINX config..."
-  cat <<EOF > "$CONFIG_PATH"
+# -----------------------------
+# Persist Prompt
+# -----------------------------
+prompt_persist() {
+    printf "\n💾 Do you want OpenSpeedTest to persist through firmware updates? [y/N]: "
+    read -r persist
+    if [ "$persist" = "y" ] || [ "$persist" = "Y" ]; then
+        grep -q "^$INSTALL_DIR\$" /etc/sysupgrade.conf 2>/dev/null || echo "$INSTALL_DIR" >> /etc/sysupgrade.conf
+        grep -q "^$STARTUP_SCRIPT\$" /etc/sysupgrade.conf 2>/dev/null || echo "$STARTUP_SCRIPT" >> /etc/sysupgrade.conf
+        printf "✅ Persistence enabled.\n"
+    else
+        printf "✅ Persistence disabled.\n"
+    fi
+}
+
+# -----------------------------
+# Download Source
+# -----------------------------
+choose_download_source() {
+    printf "\n🌐 Choose download source:\n"
+    printf "1️⃣  Official repository\n"
+    printf "2️⃣  GL.iNet mirror\n"
+    printf "Choose [1-2]: "
+    read -r src
+    printf "\n"
+    case $src in
+        1) DOWNLOAD_URL="https://github.com/openspeedtest/Speed-Test/archive/refs/heads/main.zip" ;;
+        2) DOWNLOAD_URL="https://fw.gl-inet.com/tools/script/Speed-Test-main.zip" ;;
+        *) printf "❌ Invalid option. Defaulting to official repository.\n"; DOWNLOAD_URL="https://github.com/openspeedtest/Speed-Test/archive/refs/heads/main.zip" ;;
+    esac
+}
+
+# -----------------------------
+# Install OpenSpeedTest
+# -----------------------------
+install_openspeedtest() {
+    check_space
+    prompt_persist
+    choose_download_source
+
+    # Stop running OpenSpeedTest if PID exists
+    if [ -f "$PID_FILE" ]; then
+        OLD_PID=$(cat "$PID_FILE")
+        if kill -0 "$OLD_PID" 2>/dev/null; then
+            printf "⚠️  Existing OpenSpeedTest detected. Stopping...\n"
+            kill "$OLD_PID" && printf "✅ Stopped.\n" || printf "❌ Failed to stop.\n"
+            rm -f "$PID_FILE"
+        fi
+    fi
+
+    mkdir -p "$INSTALL_DIR"
+    cd "$INSTALL_DIR" || exit 1
+    [ -d Speed-Test-main ] && rm -rf Speed-Test-main
+
+    # Download with spinner
+    wget -O main.zip "$DOWNLOAD_URL" >/dev/null 2>&1 &
+    wget_pid=$!
+    spinner "$wget_pid"
+    wait "$wget_pid"
+
+    # Unzip with spinner
+    unzip -o main.zip >/dev/null &
+    unzip_pid=$!
+    spinner_unzip "$unzip_pid"
+    wait "$unzip_pid"
+    rm main.zip
+
+    # Customize OpenSpeedTest thread settings
+    INDEX_FILE="$INSTALL_DIR/Speed-Test-main/index.html"
+    if [ -f "$INDEX_FILE" ]; then
+        printf "%b\n" "${CYAN}⚙️  Setting default OpenSpeedTest thread limits (2 download / 2 upload)...${RESET}"
+        sed -i 's/var dlThreads = [0-9]\+;/var dlThreads = 2;/' "$INDEX_FILE"
+        sed -i 's/var ulThreads = [0-9]\+;/var ulThreads = 2;/' "$INDEX_FILE"
+        printf "%b\n" "${GREEN}✅ Thread limits updated successfully.${RESET}\n"
+    else
+        printf "%b\n" "${YELLOW}⚠️  index.html not found — could not adjust thread settings.${RESET}\n"
+    fi
+
+    # Create NGINX config
+    cat <<EOF > "$CONFIG_PATH"
 worker_processes  auto;
 worker_rlimit_nofile 100000;
 user nobody nogroup;
@@ -184,7 +215,7 @@ events {
 }
 
 error_log  /var/log/nginx/error.log notice;
-pid        /tmp/nginx.pid;
+pid        $PID_FILE;
 
 http {
     include       mime.types;
@@ -193,7 +224,6 @@ http {
     server {
         server_name _ localhost;
         listen $PORT;
-        listen [::]:$PORT;
         root $INSTALL_DIR/Speed-Test-main;
         index index.html;
 
@@ -229,48 +259,129 @@ http {
 }
 EOF
 
-  echo "Setting up OpenSpeedTest files..."
-  mkdir -p "$INSTALL_DIR"
-  cd "$INSTALL_DIR" || exit 1
-
-  if [ -d Speed-Test-main ]; then
-    printf "Directory already exists. Overwrite? [y/N] "
-    read -r dir_exists
-        if [[ "$dir_exists" =~ ^[Yy]$ ]]; then
-            rm -rf Speed-Test-main
-        fi
-    rm -rf Speed-Test-main
-  fi
-
-  echo "Downloading OpenSpeedTest..."
-  wget -qO main.zip https://github.com/openspeedtest/Speed-Test/archive/refs/heads/main.zip
-  unzip -o main.zip >/dev/null
-  rm main.zip
-
-  echo "Creating startup scripts..."
-  cat <<EOF > "$STARTUP_SCRIPT"
+    # Create startup script
+    cat <<EOF > "$STARTUP_SCRIPT"
 #!/bin/sh /etc/rc.common
 START=81
 STOP=15
 start() {
-  echo "Starting OpenSpeedTest NGINX Server..."
-  /usr/sbin/nginx -c $CONFIG_PATH
+    if netstat -tuln | grep ":$PORT " >/dev/null; then
+        printf "⚠️  Port $PORT already in use. Cannot start OpenSpeedTest NGINX.\n"
+        return 1
+    fi
+    printf "Starting OpenSpeedTest NGINX Server..."
+    /usr/sbin/nginx -c $CONFIG_PATH
+    printf " ✅\n"
 }
 stop() {
-  echo "Stopping OpenSpeedTest NGINX Server..."
-  killall nginx
+    if [ -f $PID_FILE ]; then
+        kill \$(cat $PID_FILE) 2>/dev/null
+        rm -f $PID_FILE
+    fi
 }
 EOF
+    chmod +x "$STARTUP_SCRIPT"
+    "$STARTUP_SCRIPT" enable
 
+    # Start NGINX
+    "$STARTUP_SCRIPT" start
 
-  chmod +x "$STARTUP_SCRIPT" 
-  "$STARTUP_SCRIPT" enable
-
-  echo "Starting NGINX..."
-  "$STARTUP_SCRIPT" start
-
-  echo -e "✅ Installation complete. Open http://<router-ip>:$PORT in your browser."
-  exit 0
+    # Detect internal IP
+    INTERNAL_IP=$(ip -4 addr show "$(ip route | awk '/default/ {print $5; exit}')" | awk '/inet/ {print $2}' | cut -d/ -f1)
+    printf "\n✅ Installation complete. Open  ${CYAN}http://%s:%d  \n${RESET}" "$INTERNAL_IP" "$PORT"
+    press_any_key
 }
 
+# -----------------------------
+# Diagnostics
+# -----------------------------
+diagnose_nginx() {
+    printf "\n🔍 Running OpenSpeedTest diagnostics...\n\n"
+
+    # Detect internal IP
+    INTERNAL_IP=$(ip -4 addr show "$(ip route | awk '/default/ {print $5; exit}')" | awk '/inet/ {print $2}' | cut -d/ -f1)
+
+    # Check if NGINX process is running
+    if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
+        printf "✅ OpenSpeedTest NGINX process is running (PID: %s)\n" "$(cat "$PID_FILE")"
+    else
+        printf "❌ OpenSpeedTest NGINX process is NOT running\n"
+    fi
+
+    # Check if port is listening
+    if netstat -tuln | grep ":$PORT " >/dev/null; then
+        printf "✅ Port %d is open and listening on %s\n" "$PORT" "$INTERNAL_IP"
+        printf "🌐 You can access OpenSpeedTest at: ${CYAN}http://%s:%d\n${RESET}" "$INTERNAL_IP" "$PORT"
+    else
+        printf "❌ Port %d is not listening on %s\n" "$PORT" "$INTERNAL_IP"
+    fi
+
+    press_any_key
+}
+
+# -----------------------------
+# Uninstall OpenSpeedTest
+# -----------------------------
+uninstall_all() {
+    printf "\n🧹 This will remove OpenSpeedTest, the startup script, and /www2 contents.\n"
+    printf "Are you sure? [y/N]: "
+    read -r confirm
+    if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
+        printf "❌ Uninstall cancelled.\n"
+        press_any_key
+        return
+    fi
+
+    if [ -f "$PID_FILE" ]; then
+        kill "$(cat "$PID_FILE")" 2>/dev/null
+        rm -f "$PID_FILE"
+    fi
+
+    if [ -d "$INSTALL_DIR" ]; then
+        rm -rf "$INSTALL_DIR"
+    fi
+
+    [ -L "/www2" ] && rm -f "/www2"
+
+    [ -f "$CONFIG_PATH" ] && rm -f "$CONFIG_PATH"
+
+    if [ -f "$STARTUP_SCRIPT" ]; then
+        "$STARTUP_SCRIPT" disable 2>/dev/null
+        rm -f "$STARTUP_SCRIPT"
+    fi
+
+    sed -i "\|$INSTALL_DIR|d" /etc/sysupgrade.conf 2>/dev/null
+    sed -i "\|$STARTUP_SCRIPT|d" /etc/sysupgrade.conf 2>/dev/null
+
+    printf "✅ OpenSpeedTest uninstall complete.\n"
+    press_any_key
+}
+
+# -----------------------------
+# Main Menu
+# -----------------------------
+show_menu() {
+    clear
+    printf "%b\n" "$SPLASH"
+    printf "%b\n" "${CYAN}Please select an option:${RESET}\n"
+    printf "1️⃣  Install OpenSpeedTest\n"
+    printf "2️⃣  Run diagnostics\n"
+    printf "3️⃣  Uninstall everything\n"
+    printf "4️⃣  Exit\n"
+    printf "Choose [1-4]: "
+    read opt
+    printf "\n"
+    case $opt in
+        1) install_openspeedtest ;;
+        2) diagnose_nginx ;;
+        3) uninstall_all ;;
+        4) exit 0 ;;
+        *) printf "%b\n" "${RED}❌ Invalid option.  ${RESET}"; sleep 1; show_menu ;;
+    esac
+    show_menu
+}
+
+# -----------------------------
+# Start
+# -----------------------------
 show_menu

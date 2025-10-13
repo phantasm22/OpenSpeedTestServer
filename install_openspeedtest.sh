@@ -213,16 +213,16 @@ install_openspeedtest() {
     wait "$unzip_pid"
     rm main.zip
 
-    # Customize OpenSpeedTest thread settings
-    INDEX_FILE="$INSTALL_DIR/Speed-Test-main/index.html"
-    if [ -f "$INDEX_FILE" ]; then
-        printf "%b\n" "${CYAN}⚙️  Setting default OpenSpeedTest thread limits (2 download / 2 upload)...${RESET}"
-        sed -i 's/var dlThreads = [0-9]\+;/var dlThreads = 4;/' "$INDEX_FILE"
-        sed -i 's/var ulThreads = [0-9]\+;/var ulThreads = 4;/' "$INDEX_FILE"
-        printf "%b\n" "${GREEN}✅ Thread limits updated successfully.${RESET}\n"
-    else
-        printf "%b\n" "${YELLOW}⚠️  index.html not found — could not adjust thread settings.${RESET}\n"
-    fi
+    # Customize OpenSpeedTest thread settings -- 3/2 for LAN, 9/8 for Wifi on BE9300
+    #INDEX_FILE="$INSTALL_DIR/Speed-Test-main/index.html"
+    #if [ -f "$INDEX_FILE" ]; then
+    #    printf "%b\n" "${CYAN}⚙️  Setting default OpenSpeedTest thread limits (9 download / 8 upload)...${RESET}"
+    #    sed -i 's/var dlThreads = [0-9]\+;/var dlThreads = 9;/' "$INDEX_FILE"
+    #    sed -i 's/var ulThreads = [0-9]\+;/var ulThreads = 8;/' "$INDEX_FILE"
+    #    printf "%b\n" "${GREEN}✅ Thread limits updated successfully.${RESET}\n"
+    #else
+    #    printf "%b\n" "${YELLOW}⚠️  index.html not found — could not adjust thread settings.${RESET}\n"
+    #fi
 
     # Create NGINX config
     cat <<EOF > "$CONFIG_PATH"

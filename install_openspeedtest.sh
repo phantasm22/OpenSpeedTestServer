@@ -129,7 +129,7 @@ check_space() {
 # Persist Prompt
 # -----------------------------
 prompt_persist() {
-    if [ -n "$AVAILABLE_SPACE_MB" ] && [ "$AVAILABLE_SPACE_MB" -ge "$REQUIRED_SPACE_MB" ]; then
+    if [ -n "$AVAILABLE_SPACE_MB" ] && [ "$AVAILABLE_SPACE_MB" -ge "$REQUIRED_SPACE_MB" ] && [ ! -L "$INSTALL_DIR" ]; then
         printf "\n💾 Do you want OpenSpeedTest to persist through firmware updates? [y/N]: "
         read -r persist
         if [ "$persist" = "y" ] || [ "$persist" = "Y" ]; then

@@ -129,15 +129,17 @@ check_space() {
 # Persist Prompt
 # -----------------------------
 prompt_persist() {
-    printf "\n💾 Do you want OpenSpeedTest to persist through firmware updates? [y/N]: "
-    read -r persist
-    if [ "$persist" = "y" ] || [ "$persist" = "Y" ]; then
-        grep -q "^$INSTALL_DIR\$" /etc/sysupgrade.conf 2>/dev/null || echo "$INSTALL_DIR" >> /etc/sysupgrade.conf
-        grep -q "^$STARTUP_SCRIPT\$" /etc/sysupgrade.conf 2>/dev/null || echo "$STARTUP_SCRIPT" >> /etc/sysupgrade.conf
-        printf "✅ Persistence enabled.\n"
-    else
-        printf "✅ Persistence disabled.\n"
+    if [ -n "$AVAILABLE_SPACE_MB" ] && [ "$AVAILABLE_SPACE_MB" -ge "$REQUIRED_SPACE_MB" ]; then
+        printf "\n💾 Do you want OpenSpeedTest to persist through firmware updates? [y/N]: "
+        read -r persist
+        if [ "$persist" = "y" ] || [ "$persist" = "Y" ]; then
+            grep -q "^$INSTALL_DIR\$" /etc/sysupgrade.conf 2>/dev/null || echo "$INSTALL_DIR" >> /etc/sysupgrade.conf
+            grep -q "^$STARTUP_SCRIPT\$" /etc/sysupgrade.conf 2>/dev/null || echo "$STARTUP_SCRIPT" >> /etc/sysupgrade.conf
+            printf "✅ Persistence enabled.\n"
+            return
+        fi
     fi
+    printf "✅ Persistence disabled.\n"
 }
 
 # -----------------------------
@@ -155,6 +157,14 @@ choose_download_source() {
         2) DOWNLOAD_URL="https://fw.gl-inet.com/tools/script/Speed-Test-main.zip" ;;
         *) printf "❌ Invalid option. Defaulting to official repository.\n"; DOWNLOAD_URL="https://github.com/openspeedtest/Speed-Test/archive/refs/heads/main.zip" ;;
     esac
+}
+
+# -----------------------------
+# Detect Internal IP
+# -----------------------------
+detect_internal_ip() {
+    INTERNAL_IP=$(ip -4 addr show | awk '/inet/ && $2 !~ /^127/ {print $2}' | cut -d/ -f1 | grep -v "$(ip -4 addr show $(ip route | awk '/default/ {print $5; exit}') | awk '/inet/ {print $2}' | cut -d/ -f1)" | head -n1)
+   [ -z "$INTERNAL_IP" ] && INTERNAL_IP="<router_ip>"
 }
 
 # -----------------------------
@@ -287,7 +297,7 @@ EOF
     "$STARTUP_SCRIPT" start
 
     # Detect internal IP
-    INTERNAL_IP=$(ip -4 addr show "$(ip route | awk '/default/ {print $5; exit}')" | awk '/inet/ {print $2}' | cut -d/ -f1)
+    detect_internal_ip
     printf "\n✅ Installation complete. Open  ${CYAN}http://%s:%d  \n${RESET}" "$INTERNAL_IP" "$PORT"
     press_any_key
 }
@@ -299,8 +309,8 @@ diagnose_nginx() {
     printf "\n🔍 Running OpenSpeedTest diagnostics...\n\n"
 
     # Detect internal IP
-    INTERNAL_IP=$(ip -4 addr show "$(ip route | awk '/default/ {print $5; exit}')" | awk '/inet/ {print $2}' | cut -d/ -f1)
-
+    detect_internal_ip
+    
     # Check if NGINX process is running
     if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
         printf "✅ OpenSpeedTest NGINX process is running (PID: %s)\n" "$(cat "$PID_FILE")"

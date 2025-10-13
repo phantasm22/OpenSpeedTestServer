@@ -133,13 +133,15 @@ prompt_persist() {
         printf "\n💾 Do you want OpenSpeedTest to persist through firmware updates? [y/N]: "
         read -r persist
         if [ "$persist" = "y" ] || [ "$persist" = "Y" ]; then
-            grep -q "^$INSTALL_DIR\$" /etc/sysupgrade.conf 2>/dev/null || echo "$INSTALL_DIR" >> /etc/sysupgrade.conf
-            grep -q "^$STARTUP_SCRIPT\$" /etc/sysupgrade.conf 2>/dev/null || echo "$STARTUP_SCRIPT" >> /etc/sysupgrade.conf
+            grep -Fxq "$INSTALL_DIR" /etc/sysupgrade.conf 2>/dev/null || echo "$INSTALL_DIR" >> /etc/sysupgrade.conf
+            grep -Fxq "$STARTUP_SCRIPT" /etc/sysupgrade.conf 2>/dev/null || echo "$STARTUP_SCRIPT" >> /etc/sysupgrade.conf
             printf "✅ Persistence enabled.\n"
             return
         fi
     fi
-    printf "✅ Persistence disabled.\n"
+    sed -i "\|$INSTALL_DIR|d" /etc/sysupgrade.conf 2>/dev/null
+    sed -i "\|$STARTUP_SCRIPT|d" /etc/sysupgrade.conf 2>/dev/null
+    printf "✅ Persistence disabled.\n"  
 }
 
 # -----------------------------

@@ -135,13 +135,22 @@ prompt_persist() {
         if [ "$persist" = "y" ] || [ "$persist" = "Y" ]; then
             grep -Fxq "$INSTALL_DIR" /etc/sysupgrade.conf 2>/dev/null || echo "$INSTALL_DIR" >> /etc/sysupgrade.conf
             grep -Fxq "$STARTUP_SCRIPT" /etc/sysupgrade.conf 2>/dev/null || echo "$STARTUP_SCRIPT" >> /etc/sysupgrade.conf
+            grep -Fxq "$CONFIG_PATH" /etc/sysupgrade.conf 2>/dev/null || echo "$CONFIG_PATH" >> /etc/sysupgrade.conf
             printf "✅ Persistence enabled.\n"
             return
         fi
     fi
+    remove_persistence
+    printf "✅ Persistence disabled.\n"  
+}
+
+# -----------------------------
+# Remove Persistence
+# -----------------------------
+remove_persistence() {
     sed -i "\|$INSTALL_DIR|d" /etc/sysupgrade.conf 2>/dev/null
     sed -i "\|$STARTUP_SCRIPT|d" /etc/sysupgrade.conf 2>/dev/null
-    printf "✅ Persistence disabled.\n"  
+    sed -i "\|$CONFIG_PATH|d" /etc/sysupgrade.conf 2>/dev/null
 }
 
 # -----------------------------
@@ -362,9 +371,7 @@ uninstall_all() {
         rm -f "$STARTUP_SCRIPT"
     fi
 
-    sed -i "\|$INSTALL_DIR|d" /etc/sysupgrade.conf 2>/dev/null
-    sed -i "\|$STARTUP_SCRIPT|d" /etc/sysupgrade.conf 2>/dev/null
-
+    remove_persistence
     printf "✅ OpenSpeedTest uninstall complete.\n"
     press_any_key
 }

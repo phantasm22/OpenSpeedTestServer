@@ -182,7 +182,6 @@ detect_internal_ip() {
 # Install OpenSpeedTest
 # -----------------------------
 install_openspeedtest() {
-    install_openspeedtest() {
     echo "🔍 Checking if NGINX is installed..."
     if ! command -v nginx >/dev/null 2>&1; then
         echo "📦 NGINX not found. Installing..."

@@ -44,6 +44,7 @@ REQUIRED_SPACE_MB=64
 PORT=8888
 PID_FILE="/var/run/nginx_OpenSpeedTest.pid"
 BLA_BOX="┤ ┴ ├ ┬"  # spinner frames
+opkg_updated=0
 
 # -----------------------------
 # Utility Functions
@@ -179,23 +180,43 @@ detect_internal_ip() {
 }
 
 # -----------------------------
+# Install Dependencies
+# -----------------------------
+install_dependencies() {
+    DEPENDENCIES="wget:wget unzip:unzip timeout:coreutils-timeout curl:curl"
+
+    for item in $DEPENDENCIES; do
+        CMD=${item%%:*}   # command name
+        PKG=${item##*:}   # package name
+
+        # Uppercase using BusyBox-compatible tr
+        CMD_UP=$(printf "%s" "$CMD" | tr 'a-z' 'A-Z')
+        PKG_UP=$(printf "%s" "$PKG" | tr 'a-z' 'A-Z')
+
+        if ! command -v "$CMD" >/dev/null 2>&1; then
+            printf "${CYAN}📦 %s %-1s${RESET}not found. Installing ${CYAN}%s${RESET}...\n" "$CMD_UP" "$PKG_UP"
+            if [ $opkg_updated -eq 0 ]; then
+                opkg update >/dev/null 2>&1
+                opkg_updated=1
+            fi
+
+            if opkg install "$PKG" >/dev/null 2>&1; then
+                printf "${CYAN}✅ %s %-1s${RESET}installed successfully.\n" "$PKG_UP"
+            else
+                printf "${RED}❌ Failed to install %s. Check your internet or opkg configuration.${RESET}\n" "$PKG_UP"
+                exit 1
+            fi
+        else
+            printf "${CYAN}✅ %s %-1s${RESET}already installed.\n" "$CMD_UP"
+        fi
+    done
+}
+
+# -----------------------------
 # Install OpenSpeedTest
 # -----------------------------
 install_openspeedtest() {
-    echo "🔍 Checking if NGINX is installed..."
-    if ! command -v nginx >/dev/null 2>&1; then
-        echo "📦 NGINX not found. Installing..."
-        opkg update >/dev/null 2>&1
-        if opkg install nginx >/dev/null 2>&1; then
-            echo "✅ NGINX installed successfully."
-        else
-            echo "❌ Failed to install NGINX. Please check your internet connection or opkg configuration."
-            exit 1
-        fi
-    else
-        echo "✅ NGINX already installed."
-    fi
-    
+    install_dependencies
     check_space
     prompt_persist
     choose_download_source
@@ -226,17 +247,6 @@ install_openspeedtest() {
     spinner_unzip "$unzip_pid"
     wait "$unzip_pid"
     rm main.zip
-
-    # Customize OpenSpeedTest thread settings -- 3/2 for LAN, 9/8 for Wifi on BE9300
-    #INDEX_FILE="$INSTALL_DIR/Speed-Test-main/index.html"
-    #if [ -f "$INDEX_FILE" ]; then
-    #    printf "%b\n" "${CYAN}⚙️  Setting default OpenSpeedTest thread limits (9 download / 8 upload)...${RESET}"
-    #    sed -i 's/var dlThreads = [0-9]\+;/var dlThreads = 9;/' "$INDEX_FILE"
-    #    sed -i 's/var ulThreads = [0-9]\+;/var ulThreads = 8;/' "$INDEX_FILE"
-    #    printf "%b\n" "${GREEN}✅ Thread limits updated successfully.${RESET}\n"
-    #else
-    #    printf "%b\n" "${YELLOW}⚠️  index.html not found — could not adjust thread settings.${RESET}\n"
-    #fi
 
     # Create NGINX config
     cat <<EOF > "$CONFIG_PATH"

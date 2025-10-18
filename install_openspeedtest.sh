@@ -183,7 +183,7 @@ detect_internal_ip() {
 # Install Dependencies
 # -----------------------------
 install_dependencies() {
-    DEPENDENCIES="wget:wget unzip:unzip timeout:coreutils-timeout curl:curl"
+    DEPENDENCIES="curl:curl nginx:nginx-ssl timeout:coreutils-timeout unzip:unzip wget:wget"
 
     for item in $DEPENDENCIES; do
         CMD=${item%%:*}   # command name

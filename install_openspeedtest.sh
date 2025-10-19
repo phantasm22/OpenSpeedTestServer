@@ -95,20 +95,20 @@ check_space() {
 
     AVAILABLE_SPACE_MB=$(df -m "$SPACE_CHECK_PATH" 2>/dev/null | awk 'NR==2 {print $4}')
     if [ -z "$AVAILABLE_SPACE_MB" ] || [ "$AVAILABLE_SPACE_MB" -lt "$REQUIRED_SPACE_MB" ]; then
-        printf "❌ Not enough free space at ${CYAN} %s${RESET}. Required: ${CYAN}%dMB${RESET}, Available: ${CYAN}%sMB${RESET}  \n" "$SPACE_CHECK_PATH" "$REQUIRED_SPACE_MB" "${AVAILABLE_SPACE_MB:-0}"
+        printf "❌ Not enough free space at ${CYAN}%s${RESET}. Required: ${CYAN}%dMB${RESET}, Available: ${CYAN}%sMB${RESET}  \n" "$SPACE_CHECK_PATH" "$REQUIRED_SPACE_MB" "${AVAILABLE_SPACE_MB:-0}"
         printf "\n🔍 Searching mounted external drives for sufficient space...\n"
 
         for mountpoint in $(awk '$2 ~ /^\/mnt\// {print $2}' /proc/mounts); do
             ext_space=$(df -m "$mountpoint" | awk 'NR==2 {print $4}')
             if [ "$ext_space" -ge "$REQUIRED_SPACE_MB" ]; then
-                printf "💾 Found external drive with enough space: ${CYAN} %s${RESET} (${CYAN}%dMB${RESET} available)\n" "$mountpoint" "$ext_space"
+                printf "💾 Found external drive with enough space: ${CYAN}%s${RESET} (${CYAN}%dMB${RESET} available)\n" "$mountpoint" "$ext_space"
                 printf "Use it for installation by creating a symlink at ${CYAN}%s${RESET}? [y/N]: " "$INSTALL_DIR"
                 read -r use_external
                 if [ "$use_external" = "y" ] || [ "$use_external" = "Y" ]; then
                     INSTALL_DIR="$mountpoint/openspeedtest"
                     mkdir -p "$INSTALL_DIR"
                     ln -sf "$INSTALL_DIR" /www2
-                    printf "✅ Symlink created: /www2 -> ${CYAN} %s${RESET}\n" "$INSTALL_DIR"
+                    printf "✅ Symlink created: /www2 -> ${CYAN}%s${RESET}\n" "$INSTALL_DIR"
                     break
                 fi
             fi
@@ -119,10 +119,10 @@ check_space() {
             printf "❌ Still not enough space to install. Aborting.\n"
             exit 1
         else
-            printf "✅ Sufficient space found at new location: ${CYAN} %dMB${RESET} available  \n" "$NEW_SPACE_MB"
+            printf "✅ Sufficient space found at new location: ${CYAN}%dMB${RESET} available  \n" "$NEW_SPACE_MB"
         fi
     else
-        printf "✅ Sufficient space for installation: ${CYAN} %dMB${RESET} available  \n" "$AVAILABLE_SPACE_MB"
+        printf "✅ Sufficient space for installation: ${CYAN}%dMB${RESET} available  \n" "$AVAILABLE_SPACE_MB"
     fi
 }
 
@@ -194,20 +194,20 @@ install_dependencies() {
         PKG_UP=$(printf "%s" "$PKG" | tr 'a-z' 'A-Z')
 
         if ! command -v "$CMD" >/dev/null 2>&1; then
-            printf "${CYAN}📦 %s %-1s${RESET}not found. Installing ${CYAN}%s${RESET}...\n" "$CMD_UP" "$PKG_UP"
+            printf "${CYAN}📦 %s${RESET} not found. Installing ${CYAN}%s${RESET}...\n" "$CMD_UP" "$PKG_UP"
             if [ $opkg_updated -eq 0 ]; then
                 opkg update >/dev/null 2>&1
                 opkg_updated=1
             fi
 
             if opkg install "$PKG" >/dev/null 2>&1; then
-                printf "${CYAN}✅ %s %-1s${RESET}installed successfully.\n" "$PKG_UP"
+                printf "${CYAN}✅ %s${RESET} installed successfully.\n" "$PKG_UP"
             else
                 printf "${RED}❌ Failed to install %s. Check your internet or opkg configuration.${RESET}\n" "$PKG_UP"
                 exit 1
             fi
         else
-            printf "${CYAN}✅ %s %-1s${RESET}already installed.\n" "$CMD_UP"
+            printf "${CYAN}✅ %s${RESET} already installed.\n" "$CMD_UP"
         fi
     done
 }

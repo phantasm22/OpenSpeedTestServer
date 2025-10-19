@@ -333,7 +333,7 @@ EOF
 
     # Detect internal IP
     detect_internal_ip
-    printf "\n✅ Installation complete. Open  ${CYAN}http://%s:%d  \n${RESET}" "$INTERNAL_IP" "$PORT"
+    printf "\n✅ Installation complete. Open ${CYAN}http://%s:%d  \n${RESET}" "$INTERNAL_IP" "$PORT"
     press_any_key
 }
 

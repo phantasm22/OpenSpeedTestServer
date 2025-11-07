@@ -134,15 +134,25 @@ prompt_persist() {
         printf "\n💾 Do you want OpenSpeedTest to persist through firmware updates? [y/N]: "
         read -r persist
         if [ "$persist" = "y" ] || [ "$persist" = "Y" ]; then
+            # Core paths
             grep -Fxq "$INSTALL_DIR" /etc/sysupgrade.conf 2>/dev/null || echo "$INSTALL_DIR" >> /etc/sysupgrade.conf
             grep -Fxq "$STARTUP_SCRIPT" /etc/sysupgrade.conf 2>/dev/null || echo "$STARTUP_SCRIPT" >> /etc/sysupgrade.conf
             grep -Fxq "$CONFIG_PATH" /etc/sysupgrade.conf 2>/dev/null || echo "$CONFIG_PATH" >> /etc/sysupgrade.conf
+
+            # Also persist any rc.d symlinks for startup/shutdown (S* and K*)
+            if [ -n "$STARTUP_SCRIPT" ]; then
+                SERVICE_NAME=$(basename "$STARTUP_SCRIPT")
+                for LINK in $(find /etc/rc.d/ -type l -name "[SK]*${SERVICE_NAME}" 2>/dev/null); do
+                    grep -Fxq "$LINK" /etc/sysupgrade.conf 2>/dev/null || echo "$LINK" >> /etc/sysupgrade.conf
+                done
+            fi
+
             printf "✅ Persistence enabled.\n"
             return
         fi
     fi
     remove_persistence
-    printf "✅ Persistence disabled.\n"  
+    printf "✅ Persistence disabled.\n"
 }
 
 # -----------------------------
@@ -152,6 +162,11 @@ remove_persistence() {
     sed -i "\|$INSTALL_DIR|d" /etc/sysupgrade.conf 2>/dev/null
     sed -i "\|$STARTUP_SCRIPT|d" /etc/sysupgrade.conf 2>/dev/null
     sed -i "\|$CONFIG_PATH|d" /etc/sysupgrade.conf 2>/dev/null
+
+    if [ -n "$STARTUP_SCRIPT" ]; then
+        SERVICE_NAME=$(basename "$STARTUP_SCRIPT")
+        sed -i "\|/etc/rc.d/[SK].*${SERVICE_NAME}|d" /etc/sysupgrade.conf 2>/dev/null
+    fi
 }
 
 # -----------------------------
@@ -218,7 +233,6 @@ install_dependencies() {
 install_openspeedtest() {
     install_dependencies
     check_space
-    prompt_persist
     choose_download_source
 
     # Stop running OpenSpeedTest if PID exists
@@ -334,6 +348,7 @@ EOF
     # Detect internal IP
     detect_internal_ip
     printf "\n✅ Installation complete. Open ${CYAN}http://%s:%d  \n${RESET}" "$INTERNAL_IP" "$PORT"
+    prompt_persist
     press_any_key
 }
 

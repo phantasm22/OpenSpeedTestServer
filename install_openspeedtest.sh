@@ -157,7 +157,7 @@ check_self_update() {
                 printf "⬆️  Updating...\n"
                 cp "$TMP_NEW_SCRIPT" "$SCRIPT_PATH.new" && chmod +x "$SCRIPT_PATH.new"
 		printf "✅ Upgrade complete. Restarting script...\n"
-		exec "$SCRIPT_PATH" "$@"
+		exec "$SCRIPT_PATH.new" "$@"
                 ;;
             *)
                 printf "⏭️  Skipping update. Continuing with current version.\n"

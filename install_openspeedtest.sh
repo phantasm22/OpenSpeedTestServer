@@ -60,7 +60,7 @@ case "$0" in
         printf "🧹 Applying update...\n"
         mv -f "$0" "$ORIGINAL" && chmod +x "$ORIGINAL"
         printf "✅ Update applied. Restarting main script...\n"
-		sleep 2
+        sleep 3
         exec "$ORIGINAL" "$@"
         ;;
 esac

@@ -21,11 +21,11 @@
 - 🔧 Custom NGINX configuration that avoids conflicts with the GL.iNet web UI
 - 📁 Installs to `/www2`, with automatic detection of available storage space
 - 🔗 Supports symlinking to external drives (e.g. SD cards or USB) if internal space is insufficient
-- ⬆️ Supports persistence after firmware updates (beta)
+- ⬆️ Supports persistence after firmware updates
 - 🔁 Creates startup and kill scripts for boot-time operation
 - 🧹 Clean uninstall that removes configs, startup scripts, and any symlinked storage
 - 🩺 Includes diagnostics to verify NGINX is running and reachable
-- ⤵️ Automatic download of the most up-to-date version of the script
+- ⤵️ Automatic download of the most up-to-date version of the script (beta)
 - 🧑‍💻 Interactive CLI with confirmations and safe prompts
 - 🆓 Licensed under GPLv3
 - 🧪 Tested on GL-BE9300, GL-BE3600, GL-MT3000, and GL-MT1300 (with SD card) routers

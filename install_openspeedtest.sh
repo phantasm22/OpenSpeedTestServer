@@ -486,7 +486,7 @@ show_menu() {
         1) install_openspeedtest ;;
         2) diagnose_nginx ;;
         3) uninstall_all ;;
-        4) check_self_update "$@";;
+        4) check_self_update "$@" && press_any_key;;
 	5) exit 0 ;;
         *) printf "%b\n" "${RED}❌ Invalid option.  ${RESET}"; sleep 1; show_menu ;;
     esac

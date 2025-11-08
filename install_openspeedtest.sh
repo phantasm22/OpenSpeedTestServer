@@ -2,7 +2,7 @@
 # OpenSpeedTest Installer for NGINX on GL.iNet Routers
 # Author: phantasm22
 # License: GPL-3.0
-# Version: 2025-11-07
+# Version: 2025-11-08
 #
 # This script installs or uninstalls the OpenSpeedTest server using NGINX on OpenWRT-based routers.
 # It supports:
@@ -10,6 +10,7 @@
 # - Creating a custom config and startup script
 # - Running diagnostics to check if NGINX is active
 # - Uninstalling everything cleanly
+# - Automatically checks and updates itself
 
 
 
@@ -45,6 +46,23 @@ PORT=8888
 PID_FILE="/var/run/nginx_OpenSpeedTest.pid"
 BLA_BOX="┤ ┴ ├ ┬"  # spinner frames
 opkg_updated=0
+SCRIPT_URL="https://raw.githubusercontent.com/phantasm22/OpenSpeedTestServer/refs/heads/main/install_openspeedtest.sh"
+TMP_NEW_SCRIPT="/tmp/install_openspeedtest_new.sh"
+SCRIPT_PATH="$0"
+[ "${SCRIPT_PATH#*/}" != "$SCRIPT_PATH" ] || SCRIPT_PATH="$(pwd)/$SCRIPT_PATH"
+
+# -----------------------------                                                                                         
+# Cleanup any previous updates                                                                                                      
+# ----------------------------- 
+case "$0" in
+    *.new)
+        ORIGINAL="${0%.new}"
+        printf "🧹 Applying update...\n"
+        mv -f "$0" "$ORIGINAL" && chmod +x "$ORIGINAL"
+        printf "✅ Update applied. Restarting main script...\n"
+        exec "$ORIGINAL" "$@"
+        ;;
+esac
 
 # -----------------------------
 # Utility Functions
@@ -52,9 +70,10 @@ opkg_updated=0
 spinner() {
     pid=$1
     i=0
+    task=$2
     while kill -0 "$pid" 2>/dev/null; do
-        frame=$(echo "$BLA_BOX" | cut -d' ' -f$((i % 4 + 1)))
-        printf "\r⏳  Downloading OpenSpeedTest... %-20s" "$frame"
+        frame=$(printf "%s" "$BLA_BOX" | cut -d' ' -f$((i % 4 + 1)))
+        printf "\r⏳  %s... %-20s" "$task" "$frame"
         if command -v usleep >/dev/null 2>&1; then
             usleep 200000
         else
@@ -62,28 +81,12 @@ spinner() {
         fi
         i=$((i+1))
     done
-    printf "\r✅  Downloading OpenSpeedTest... Done!      \n"
-}
-
-spinner_unzip() {
-    pid=$1
-    i=0
-    while kill -0 "$pid" 2>/dev/null; do
-        frame=$(echo "$BLA_BOX" | cut -d' ' -f$((i % 4 + 1)))
-        printf "\r⏳  Unzipping... %-20s" "$frame"
-        if command -v usleep >/dev/null 2>&1; then
-            usleep 200000
-        else
-            sleep 1
-        fi
-        i=$((i+1))
-    done
-    printf "\r✅  Unzip complete!        \n"
+    printf "\r✅  %s... Done!%-20s\n" "$task" " "
 }
 
 press_any_key() {
     printf "Press any key to continue..."
-    read -r _
+    read -r _ </dev/tty
 }
 
 # -----------------------------
@@ -124,6 +127,48 @@ check_space() {
     else
         printf "✅ Sufficient space for installation: ${CYAN}%dMB${RESET} available  \n" "$AVAILABLE_SPACE_MB"
     fi
+}
+
+# -----------------------------                                                                                         
+# Self-update function                                                                                     
+# -----------------------------       
+check_self_update() {
+    printf "\n🔍 Checking for script updates...\n"
+
+    LOCAL_VERSION="$(grep -m1 '^# Version:' "$SCRIPT_PATH" | awk '{print $3}' | tr -d '\r')"
+    [ -z "$LOCAL_VERSION" ] && LOCAL_VERSION="0000-00-00"
+
+    if ! wget -q -O "$TMP_NEW_SCRIPT" "$SCRIPT_URL"; then
+        printf "⚠️  Unable to check for updates (network or GitHub issue).\n"
+        return 1
+    fi
+
+    REMOTE_VERSION="$(grep -m1 '^# Version:' "$TMP_NEW_SCRIPT" | awk '{print $3}' | tr -d '\r')"
+    [ -z "$REMOTE_VERSION" ] && REMOTE_VERSION="0000-00-00"
+
+    printf "📦 Current version: %s\n" "$LOCAL_VERSION"
+    printf "🌐 Latest version:  %s\n" "$REMOTE_VERSION"
+
+    if [ "$REMOTE_VERSION" \> "$LOCAL_VERSION" ]; then
+        printf "\nA new version is available. Update now? [y/N]: "
+        read -r ans
+        case "$ans" in
+            y|Y)
+                printf "⬆️  Updating...\n"
+                cp "$TMP_NEW_SCRIPT" "$SCRIPT_PATH.new" && chmod +x "$SCRIPT_PATH.new"
+		printf "✅ Upgrade complete. Restarting script...\n"
+		exec "$SCRIPT_PATH" "$@"
+                ;;
+            *)
+                printf "⏭️  Skipping update. Continuing with current version.\n"
+                ;;
+        esac
+    else
+        printf "✅ You are already running the latest version.\n"
+    fi
+
+    rm -f "$TMP_NEW_SCRIPT" >/dev/null 2>&1
+    printf "\n"
 }
 
 # -----------------------------
@@ -190,8 +235,8 @@ choose_download_source() {
 # Detect Internal IP
 # -----------------------------
 detect_internal_ip() {
-    INTERNAL_IP=$(ip -4 addr show | awk '/inet/ && $2 !~ /^127/ {print $2}' | cut -d/ -f1 | grep -v "$(ip -4 addr show $(ip route | awk '/default/ {print $5; exit}') | awk '/inet/ {print $2}' | cut -d/ -f1)" | head -n1)
-   [ -z "$INTERNAL_IP" ] && INTERNAL_IP="<router_ip>"
+    INTERNAL_IP="$(uci get network.lan.ipaddr 2>/dev/null | tr -d '\r\n')"
+    [ -z "$INTERNAL_IP" ] && INTERNAL_IP="<router_ip>"
 }
 
 # -----------------------------
@@ -236,7 +281,7 @@ install_openspeedtest() {
     choose_download_source
 
     # Stop running OpenSpeedTest if PID exists
-    if [ -f "$PID_FILE" ]; then
+    if [ -s "$PID_FILE" ]; then
         OLD_PID=$(cat "$PID_FILE")
         if kill -0 "$OLD_PID" 2>/dev/null; then
             printf "⚠️  Existing OpenSpeedTest detected. Stopping...\n"
@@ -252,13 +297,13 @@ install_openspeedtest() {
     # Download with spinner
     wget -O main.zip "$DOWNLOAD_URL" >/dev/null 2>&1 &
     wget_pid=$!
-    spinner "$wget_pid"
+    spinner "$wget_pid" "Downloading OpenSpeedTest"
     wait "$wget_pid"
 
     # Unzip with spinner
     unzip -o main.zip >/dev/null &
     unzip_pid=$!
-    spinner_unzip "$unzip_pid"
+    spinner "$unzip_pid" "Unzipping"
     wait "$unzip_pid"
     rm main.zip
 
@@ -324,7 +369,7 @@ EOF
 START=81
 STOP=15
 start() {
-    if netstat -tuln | grep ":$PORT " >/dev/null; then
+    if netstat -tuln | grep -q ":$PORT"; then
         printf "⚠️  Port $PORT already in use. Cannot start OpenSpeedTest NGINX.\n"
         return 1
     fi
@@ -333,7 +378,7 @@ start() {
     printf " ✅\n"
 }
 stop() {
-    if [ -f $PID_FILE ]; then
+    if [ -s $PID_FILE ]; then
         kill \$(cat $PID_FILE) 2>/dev/null
         rm -f $PID_FILE
     fi
@@ -362,7 +407,7 @@ diagnose_nginx() {
     detect_internal_ip
     
     # Check if NGINX process is running
-    if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
+    if [ -s "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
         printf "✅ OpenSpeedTest NGINX process is running (PID: %s)\n" "$(cat "$PID_FILE")"
     else
         printf "❌ OpenSpeedTest NGINX process is NOT running\n"
@@ -415,6 +460,13 @@ uninstall_all() {
     press_any_key
 }
 
+# -----------------------------                                                                                         
+# Check for updates                                                                                                             
+# -----------------------------  
+command -v clear >/dev/null 2>&1 && clear                                                                                                               
+printf "%b\n" "$SPLASH"
+check_self_update "$@"  
+
 # -----------------------------
 # Main Menu
 # -----------------------------
@@ -425,15 +477,17 @@ show_menu() {
     printf "1️⃣  Install OpenSpeedTest\n"
     printf "2️⃣  Run diagnostics\n"
     printf "3️⃣  Uninstall everything\n"
-    printf "4️⃣  Exit\n"
-    printf "Choose [1-4]: "
+    printf "4️⃣  Check for update\n"
+    printf "5️⃣  Exit\n"
+    printf "Choose [1-5]: "
     read opt
     printf "\n"
     case $opt in
         1) install_openspeedtest ;;
         2) diagnose_nginx ;;
         3) uninstall_all ;;
-        4) exit 0 ;;
+        4) check_self_update "$@";;
+	5) exit 0 ;;
         *) printf "%b\n" "${RED}❌ Invalid option.  ${RESET}"; sleep 1; show_menu ;;
     esac
     show_menu

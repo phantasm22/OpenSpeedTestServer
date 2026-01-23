@@ -2,7 +2,7 @@
 # OpenSpeedTest Installer for NGINX on GL.iNet Routers
 # Author: phantasm22
 # License: GPL-3.0
-# Version: 2025-11-13
+# Version: 2026-01-22
 #
 # This script installs or uninstalls the OpenSpeedTest server using NGINX on OpenWRT-based routers.
 # It supports:
@@ -97,7 +97,7 @@ check_space() {
     SPACE_CHECK_PATH="$INSTALL_DIR"
     [ ! -e "$INSTALL_DIR" ] && SPACE_CHECK_PATH="/"
 
-    AVAILABLE_SPACE_MB=$(df -m "$SPACE_CHECK_PATH" 2>/dev/null | awk 'NR==2 {print $4}')
+    AVAILABLE_SPACE_MB=$(df -Pm "$SPACE_CHECK_PATH" 2>/dev/null | awk 'NR==2 {print $4}')
     if [ -z "$AVAILABLE_SPACE_MB" ] || [ "$AVAILABLE_SPACE_MB" -lt "$REQUIRED_SPACE_MB" ]; then
         printf "❌ Not enough free space at ${CYAN}%s${RESET}. Required: ${CYAN}%dMB${RESET}, Available: ${CYAN}%sMB${RESET}  \n" "$SPACE_CHECK_PATH" "$REQUIRED_SPACE_MB" "${AVAILABLE_SPACE_MB:-0}"
         printf "\n🔍 Searching mounted external drives for sufficient space...\n"

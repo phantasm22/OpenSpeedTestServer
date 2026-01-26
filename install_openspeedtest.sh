@@ -2,7 +2,7 @@
 # OpenSpeedTest Installer for NGINX on GL.iNet Routers
 # Author: phantasm22
 # License: GPL-3.0
-# Version: 2026-01-22
+# Version: 2026-01-26
 #
 # This script installs or uninstalls the OpenSpeedTest server using NGINX on OpenWRT-based routers.
 # It supports:
@@ -298,6 +298,7 @@ install_openspeedtest() {
         fi
     fi
 
+(
     mkdir -p "$INSTALL_DIR"
     cd "$INSTALL_DIR" || exit 1
     [ -d Speed-Test-main ] && rm -rf Speed-Test-main
@@ -314,6 +315,7 @@ install_openspeedtest() {
     spinner "$unzip_pid" "Unzipping"
     wait "$unzip_pid"
     rm main.zip
+)
 
     # Create NGINX config
     cat <<EOF > "$CONFIG_PATH"

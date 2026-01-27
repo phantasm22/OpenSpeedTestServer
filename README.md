@@ -28,7 +28,7 @@
 - ⤵️ Automatic download of the most up-to-date version of the script (beta)
 - 🧑‍💻 Interactive CLI with confirmations and safe prompts
 - 🆓 Licensed under GPLv3
-- 🧪 Tested on GL-BE9300, GL-BE3600, GL-MT3000, and GL-MT1300 (with SD card) routers
+- 🧪 Tested on GL-BE9300, GL-BE3600, GL-MT3000, GL-MT1300 (with SD card), and GL-X3000/GL-XE3000 (Cellular Models) routers 
 
 ---
 

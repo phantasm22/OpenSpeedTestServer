@@ -1,0 +1,20 @@
+name: Sync to GLiNet-Community-Scripts
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Push to org repo
+        run: |
+          git remote add community https://x-access-token:${{ secrets.ORG_SYNC_TOKEN }}@github.com/GLiNet-Community-Scripts/OpenSpeedTestServer.git
+          git push community main --force

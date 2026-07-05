@@ -7,6 +7,7 @@ on:
 
 jobs:
   sync:
+    if: github.repository == 'phantasm22/OpenSpeedTestServer'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
